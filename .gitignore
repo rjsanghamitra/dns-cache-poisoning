@@ -1,0 +1,11 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+
+
+# Testing files
+*.ipynb
+*.pkl
+
+# Dataset Files
+*.csv
