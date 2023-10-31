@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	detection_model "github.com/dns-spoofing/detection-model"
 	block "github.com/dns-spoofing/mitigation/blocker"
 	"github.com/dns-spoofing/resolver"
 	"github.com/joho/godotenv"
@@ -74,6 +75,15 @@ func (h *dnsHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) { // arg1 is an 
 			url_len := len(url)
 			a := strings.Split(url, ".")
 			tld := a[len(a)-1]
+			
+			jsonData := []byte(`{"url": "http://www.ff-b2b.de/", 
+			        "url_len": 21, 
+			        "ip_add": "147.22.38.45", 
+			        "geo_loc": "United States",
+			        "tld": "de",
+			        "https": "no",}`)
+			fmt.Println(detection_model.Predict(jsonData))
+			
 			record_type := l[3]
 			fmt.Println(url, location, url_len, tld, record_type)
 			row := block.Db.QueryRow("SELECT * FROM blocked-addresses WHERE address = ", ip)
