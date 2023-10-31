@@ -9,3 +9,6 @@
 
 # Dataset Files
 *.csv
+.env
+
+/detection-model

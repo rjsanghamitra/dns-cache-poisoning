@@ -6,7 +6,7 @@ from sklearn.ensemble import IsolationForest
 import joblib
 
 print("Reading Dataset")
-df=pd.read_csv('detection-model\\Webpages_Dataset_Final.csv')
+df=pd.read_csv('Webpages_Dataset_Final.csv')
 
 df = df.loc[:, ~df.columns.str.match('Unnamed: ')]
 df=df.drop('content', axis=1)
