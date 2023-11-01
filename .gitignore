@@ -10,3 +10,5 @@
 # Dataset Files
 *.csv
 .env
+
+countries.txt
