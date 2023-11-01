@@ -1,23 +1,19 @@
-package detection_model;
+package detection_model
 
 import (
 	"bytes"
-	// "fmt"
-	"io"
+	"fmt"
 	"log"
 	"net/http"
-	"strconv"
+	"encoding/json"
 )
 
-func Predict(jsonData []byte) int {
-	apiURL := "http://localhost:5000/predict" // ml model for detection of the safety of the site is predicted here
+type Prediction struct {
+		Prediction int `json:"prediction"`
+}
 
-	// jsonData := []byte(`{"url": "http://www.ff-b2b.de/", 
-    //         "url_len": 21, 
-    //         "ip_add": "147.22.38.45", 
-    //         "geo_loc": "United States",
-    //         "tld": "de",
-    //         "https": "no",}`)
+func Predict(jsonData []byte) int {
+	apiURL := "http://localhost:5000/predict"
 
 	response, err := http.Post(apiURL, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -25,17 +21,11 @@ func Predict(jsonData []byte) int {
 	}
 	defer response.Body.Close()
 
-	responseBody, err := io.ReadAll(response.Body)
-	if err != nil {
-		log.Fatal("Failed to read response body:", err)
-		return -1
-	}
-
-	predictedValue, err := strconv.Atoi(string((string(responseBody))[9]))
-	if err != nil {
-		log.Fatal("Failed to convert response to integer:", err)
-		return -1
-	}
-    // fmt.Println(string(responseBody))
-	return predictedValue
+	var prediction Prediction
+	decoder := json.NewDecoder(response.Body)
+    if err := decoder.Decode(&prediction); err != nil {
+        fmt.Println("Failed to decode response JSON:", err)
+        return -1
+    }
+	return prediction.Prediction
 }

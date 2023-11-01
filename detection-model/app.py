@@ -5,6 +5,7 @@ import subprocess
 import logging
 import os
 import json
+import random
 
 logging.basicConfig(level=logging.INFO)  # Set the logging level to INFO
 
@@ -38,6 +39,10 @@ label_mappings = {
     'tld': label_encoder_tld,
 }
 
+file=open(path+"countries.txt", "r")
+data=file.read()
+countries=data.split("\n")
+
 def preprocess_data(data):
     processed_data = {}
 
@@ -53,30 +58,24 @@ def preprocess_data(data):
 @app.route('/predict', methods=['POST'])
 def funcPredictions():
     try:
-        # req_data=request.json
-        req_data={"url": "http://www.ff-b2b.de/", 
-            "url_len": 21, 
-            "ip_add": "147.22.38.45", 
-            "geo_loc": "United States",
-            "tld": "de",
-            "https": "no"}
+        req_data=request.get_json()
+        req_data['geo_loc']=countries[random.randint(0, len(countries)-1)]
         data=list(preprocess_data(req_data).values())
         data.insert(1, req_data['url_len'])
-        # logger.info("%s", data)
+        logger.info("%s", data)
         data=np.array(data)
         
         iso_prediction=iso.predict([data])
         
         data=data+iso_prediction
-        prediction = svm.predict([data])
+        svm_prediction = svm.predict([data])
+        prediction=svm_prediction.tolist()
+        logger.info(type(prediction))
         logger.info("Processed data: %s", prediction[0])
         
-        
-
-        response = {"": f"{prediction[0]}"}
-        return jsonify(response), 200
+        response={"prediction": prediction[0]}
+        return response, 200
     except Exception as e:
-        # Handle errors and return an error response
         error_message = f"Error: {str(e)}"
         return jsonify({"error": error_message}), 400
 

@@ -9,6 +9,13 @@ import os
 cwd=os.getcwd()
 print("Reading Dataset")
 df=pd.read_csv(cwd+'/detection-model/Webpages_Dataset_Final.csv')
+countries=df['geo_loc'].unique()
+
+print("Exporting Countries List externally")
+file=open(cwd+"/detection-model/countries.txt", "w")
+for country in countries:
+    file.write(country+"\n")
+file.close()
 
 df = df.loc[:, ~df.columns.str.match('Unnamed: ')]
 df=df.drop(['who_is','js_len','js_obf_len','content'], axis=1)
