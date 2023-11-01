@@ -11,3 +11,5 @@
 *.csv
 .env
 .db
+
+countries.txt

@@ -3,6 +3,9 @@ import numpy as np
 import joblib
 import subprocess
 import logging
+import os
+import json
+import random
 
 logging.basicConfig(level=logging.INFO)  # Set the logging level to INFO
 
@@ -17,14 +20,15 @@ app = Flask(__name__)
 # except subprocess.CalledProcessError as e:
 #     print(f"An error occurred: {e.stderr}")
 
-label_encoder_url=joblib.load('detection-model\\label_encoder_url.pkl')
-label_encoder_ip_add=joblib.load('detection-model\\label_encoder_ip_add.pkl')
-label_encoder_geo_loc=joblib.load('detection-model\\label_encoder_geo_loc.pkl')
-label_encoder_https=joblib.load('detection-model\\label_encoder_https.pkl')
-label_encoder_tld=joblib.load('detection-model\\label_encoder_tld.pkl')
-label_encoder_who_is=joblib.load('detection-model\\label_encoder_who_is.pkl')
-iso=joblib.load('detection-model\\iso_forest_model.pkl')
-svm=joblib.load('detection-model\\linear_svm_model.pkl')
+cwd=os.getcwd()
+path=cwd+'/detection-model/'
+label_encoder_url=joblib.load(path+'label_encoder_url.pkl')
+label_encoder_ip_add=joblib.load(path+'label_encoder_ip_add.pkl')
+label_encoder_geo_loc=joblib.load(path+'label_encoder_geo_loc.pkl')
+label_encoder_https=joblib.load(path+'label_encoder_https.pkl')
+label_encoder_tld=joblib.load(path+'label_encoder_tld.pkl')
+iso=joblib.load(path+'iso_forest_model.pkl')
+svm=joblib.load(path+'linear_svm_model.pkl')
 
 
 label_mappings = {
@@ -32,9 +36,12 @@ label_mappings = {
     'ip_add': label_encoder_ip_add,
     'geo_loc': label_encoder_geo_loc,
     'https': label_encoder_https,
-    'who_is': label_encoder_who_is,
     'tld': label_encoder_tld,
 }
+
+file=open(path+"countries.txt", "r")
+data=file.read()
+countries=data.split("\n")
 
 def preprocess_data(data):
     processed_data = {}
@@ -51,26 +58,24 @@ def preprocess_data(data):
 @app.route('/predict', methods=['POST'])
 def funcPredictions():
     try:
-        req_data=request.json
-        
+        req_data=request.get_json()
+        req_data['geo_loc']=countries[random.randint(0, len(countries)-1)]
         data=list(preprocess_data(req_data).values())
         data.insert(1, req_data['url_len'])
-        data.insert(7, req_data['js_len'])
-        data.insert(8, req_data['js_obf_len'])
+        logger.info("%s", data)
         data=np.array(data)
         
         iso_prediction=iso.predict([data])
         
         data=data+iso_prediction
-        prediction = svm.predict([data])
+        svm_prediction = svm.predict([data])
+        prediction=svm_prediction.tolist()
+        logger.info(type(prediction))
         logger.info("Processed data: %s", prediction[0])
         
-        
-
-        response = {"": f"{prediction[0]}"}
-        return jsonify(response), 200
+        response={"prediction": prediction[0]}
+        return response, 200
     except Exception as e:
-        # Handle errors and return an error response
         error_message = f"Error: {str(e)}"
         return jsonify({"error": error_message}), 400
 
