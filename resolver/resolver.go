@@ -10,7 +10,7 @@ import (
 
 var NewCache cache.Cache = *cache.New(5*time.Minute, 10*time.Minute) // the expiration time and the time after expiration after which the item should be purged
 
-func Resolve(domain string, qtype uint16) *dns.RR { // this function resolves a domain name
+func Resolve(domain string, qtype uint16) []dns.RR { // this function resolves a domain name
 	m := new(dns.Msg)                      // Msg contains the layout of a new dns packet
 	m.SetQuestion(dns.Fqdn(domain), qtype) // creates a question from the given domain name. Fqdn creates a fully qualified domain name from the given domain name.
 	m.RecursionDesired = true              // recursively check other nameservers
@@ -22,6 +22,9 @@ func Resolve(domain string, qtype uint16) *dns.RR { // this function resolves a 
 		return nil
 	}
 
-	response := &in.Answer[0]
+	var response []dns.RR
+	for _, i := range in.Answer {
+		response = append(response, i)
+	}
 	return response
 }
