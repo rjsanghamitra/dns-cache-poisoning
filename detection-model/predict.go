@@ -1,25 +1,23 @@
-package main
+package detection_model;
 
 import (
 	"bytes"
+	// "fmt"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
 )
 
-func Predict() int {
+func Predict(jsonData []byte) int {
 	apiURL := "http://localhost:5000/predict" // ml model for detection of the safety of the site is predicted here
 
-	jsonData := []byte(`{"url": "http://www.ff-b2b.de/", 
-            "url_len": 21, 
-            "ip_add": "147.22.38.45", 
-            "geo_loc": "United States",
-            "tld": "de",
-            "who_is": "incomplete",
-            "https": "no",
-            "js_len": 720, 
-            "js_obf_len": 532.8}`)
+	// jsonData := []byte(`{"url": "http://www.ff-b2b.de/", 
+    //         "url_len": 21, 
+    //         "ip_add": "147.22.38.45", 
+    //         "geo_loc": "United States",
+    //         "tld": "de",
+    //         "https": "no",}`)
 
 	response, err := http.Post(apiURL, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -38,5 +36,6 @@ func Predict() int {
 		log.Fatal("Failed to convert response to integer:", err)
 		return -1
 	}
+    // fmt.Println(string(responseBody))
 	return predictedValue
 }
