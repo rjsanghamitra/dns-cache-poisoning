@@ -36,6 +36,7 @@ func (h *dnsHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) {
 	n := rand.Intn(51)
 
 	for _, question := range r.Question {
+		fmt.Println("Received Query:", question.Name)
 		fake, err := dns.NewRR(fmt.Sprintf("%s IN %s %s", question.Name, dns.TypeToString[question.Qtype], l[n]))
 		if err != nil {
 			fmt.Println(err)

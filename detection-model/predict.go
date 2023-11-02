@@ -1,4 +1,4 @@
-package prediction
+package detection_model
 
 import (
 	"bytes"

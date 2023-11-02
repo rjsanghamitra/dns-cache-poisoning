@@ -15,7 +15,7 @@ func (h *dnsHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) { // arg1 is an 
 	msg.SetReply(r)
 	msg.Authoritative = true // this means that our server is authoritative
 
-	for i, question := range r.Question {
+	for _, question := range r.Question {
 		fmt.Println("Received Query: ", question.Name)
 		if resp, found := resolver.NewCache.Get(question.Name); found {
 			rr, err := dns.NewRR(fmt.Sprint(resp))
@@ -26,11 +26,13 @@ func (h *dnsHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) { // arg1 is an 
 			continue
 		} else {
 			resp := resolver.Resolve(question.Name, question.Qtype)
-			resolver.NewCache.Set(question.Name, resp[i], 5*time.Minute)
-			msg.Answer = append(msg.Answer, resp...)
+			if resp != nil {
+				resolver.NewCache.Set(question.Name, resp[0], 5*time.Minute)
+				msg.Answer = append(msg.Answer, resp...)
+			}
 		}
+		w.WriteMsg(msg) // this method writes a reply back to the client
 	}
-	w.WriteMsg(msg) // this method writes a reply back to the client
 
 }
 

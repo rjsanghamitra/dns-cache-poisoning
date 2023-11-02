@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -9,37 +10,33 @@ import (
 	"time"
 
 	block "github.com/dns-spoofing/mitigation/blocker"
+	"github.com/dns-spoofing/mitigation/database"
 	"github.com/dns-spoofing/resolver"
-	"github.com/joho/godotenv"
 	"github.com/miekg/dns"
 )
 
-// struct to store ip details
-type IPDetails struct {
-	IP      string `json:"ip"`
-	Country string `json:"country_name"`
+type WebPageData struct {
+	URL    string `json:"url"`
+	URLLen int    `json:"url_len"`
+	IPAddr string `json:"ip_add"`
+	TLD    string `json:"tld"`
+	HTTPS  string `json:"https"`
 }
 
-// function to get location from ip address
-func LocationFromIP(ip string) string {
-	var envs map[string]string
-	envs, err := godotenv.Read(".env")
+func isHTTPS(url string) string {
+	resp, err := http.Get(url)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	resp, err := http.Get("https://ipinfo.io/" + ip + "?access_key=" + envs["API_KEY"])
-	if err != nil {
-		log.Fatal(err)
+	returnedURL := resp.Request.URL.String()
+
+	if strings.HasPrefix(returnedURL, "https") {
+		return "yes"
+	} else {
+		return "no"
 	}
-
-	var ipdetails IPDetails
-	json.NewDecoder(resp.Body).Decode(&ipdetails)
-
-	fmt.Println(ipdetails.Country)
-	defer resp.Body.Close()
-	return ipdetails.Country
 }
 
 type dnsHandler struct{}
@@ -64,31 +61,50 @@ func (h *dnsHandler) ServeDNS(w dns.ResponseWriter, r *dns.Msg) { // arg1 is an 
 
 			// retrieving ip address before checking if it is fake or not
 			// url, ip, location, url len, tld, record type
-			var ip string
-			l := strings.Fields((*resp).String())
-			ip = l[len(l)-1]
-			fmt.Println(l, ip)
-			url := l[0]
-			// location := LocationFromIP(ip)	// this is the api. leads to errors
-			location := "temp"
-			url_len := len(url)
-			a := strings.Split(url, ".")
-			tld := a[len(a)-1]
-			record_type := l[3]
-			fmt.Println(url, location, url_len, tld, record_type)
-			row := block.Db.QueryRow("SELECT * FROM blocked-addresses WHERE address = ", ip)
-			var temp string
-			row.Scan(&temp)
-			if temp != "" { // if temp is not empty, it means the ip address is blocked. return for now.
-				return
-			} else { // else check if the ip address is authentic or fake based on the model
-				block.CheckAndBlockIP(block.Db, ip)
+			var ip, tld string
+			var url_len int
+			var l []string
+			if resp != nil {
+
+				// get details
+				l = strings.Fields(resp[0].String())
+				ip = l[len(l)-1]
+				url := l[0]
+				// location = LocationFromIP(ip)
+				url_len = len(url)
+				a := strings.Split(url, ".")
+				tld = "." + a[len(a)-2]
+
+				jsonData := WebPageData{
+					URL:    url,
+					URLLen: url_len,
+					IPAddr: ip,
+					TLD:    tld,
+					// HTTPS:  isHTTPS("https://" + url),
+					HTTPS: "yes",
+				}
+
+				reqData, err := json.Marshal(jsonData)
+				database.CheckErr(err)
+
+				// check if the ip address is present in the database(blocked addresses)
+				Db, err := sql.Open("sqlite3", "./database/dns.db")
+				defer Db.Close()
+				database.CheckErr(err)
+				row := Db.QueryRow("SELECT * FROM blocked WHERE address = ", ip)
+				var temp string
+				row.Scan(&temp)
+				if temp != "" { // if temp is not empty, it means the ip address is blocked. return for now.
+					return
+				} else { // else check if the ip address is authentic or fake based on the model
+					block.CheckAndBlockIP(Db, ip, []byte(reqData))
+				}
+				resolver.NewCache.Set(question.Name, resp[0], 5*time.Minute)
+				msg.Answer = append(msg.Answer, resp...)
 			}
-			resolver.NewCache.Set(question.Name, resp, 5*time.Minute)
-			msg.Answer = append(msg.Answer, (*resp))
 		}
+		w.WriteMsg(msg) // this method writes a reply back to the client
 	}
-	w.WriteMsg(msg) // this method writes a reply back to the client
 }
 
 func main() {
@@ -103,5 +119,4 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	defer block.Db.Close()
 }

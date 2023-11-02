@@ -21,7 +21,7 @@ func CreateTable(db sql.DB, name string) {
 }
 
 func InsertIntoTable(db *sql.DB, name string, addr string) {
-	com := "INSERT INTO " + name + "(addr) VALUES(?)"
+	com := "INSERT INTO " + name + "(address) VALUES(?)"
 	stmt, err := db.Prepare(com)
 	CheckErr(err)
 	stmt.Exec(addr)

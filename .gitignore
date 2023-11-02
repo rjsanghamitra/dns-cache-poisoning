@@ -9,7 +9,10 @@
 
 # Dataset Files
 *.csv
+
+# Environment Variables and Testing files
 .env
-.db
+*.db
+/testing/
 
 countries.txt
