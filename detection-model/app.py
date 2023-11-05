@@ -4,7 +4,6 @@ import joblib
 import subprocess
 import logging
 import os
-import json
 import random
 
 logging.basicConfig(level=logging.INFO)  # Set the logging level to INFO
@@ -25,17 +24,16 @@ path=cwd+'/detection-model/'
 label_encoder_url=joblib.load(path+'label_encoder_url.pkl')
 label_encoder_ip_add=joblib.load(path+'label_encoder_ip_add.pkl')
 label_encoder_geo_loc=joblib.load(path+'label_encoder_geo_loc.pkl')
-label_encoder_https=joblib.load(path+'label_encoder_https.pkl')
 label_encoder_tld=joblib.load(path+'label_encoder_tld.pkl')
-iso=joblib.load(path+'iso_forest_model.pkl')
-svm=joblib.load(path+'linear_svm_model.pkl')
+cnn=joblib.load(path+'cnn_model.pkl')
+lstm=joblib.load(path+'lstm_model.pkl')
+rf=joblib.load(path+'rf_model.pkl')
 
 
 label_mappings = {
     'url': label_encoder_url,
     'ip_add': label_encoder_ip_add,
     'geo_loc': label_encoder_geo_loc,
-    'https': label_encoder_https,
     'tld': label_encoder_tld,
 }
 
@@ -45,7 +43,9 @@ countries=data.split("\n")
 
 def preprocess_data(data):
     processed_data = {}
-
+    url=data['url']
+    data['url']=url[7:] if url[:7]=='http://' else url
+    data['url']=url[8:] if url[:8]=='https://' else url
     for column, label_encoder in label_mappings.items():
         try:
             label = label_encoder.transform([data[column]])[0]
@@ -63,13 +63,16 @@ def funcPredictions():
         data=list(preprocess_data(req_data).values())
         data.insert(1, req_data['url_len'])
         logger.info("%s", data)
+
         data=np.array(data)
+        data_3d=data.reshape(1, data.shape[0], 1)
+
+        # cnn_prediction=cnn.predict(data_3d)
+        # lstm_prediction=lstm.predict(data_3d)
         
-        iso_prediction=iso.predict([data])
-        
-        data=data+iso_prediction
-        svm_prediction = svm.predict([data])
-        prediction=svm_prediction.tolist()
+        # rf_input=np.column_stack((cnn_prediction, lstm_prediction))
+        # prediction=rf.predict(rf_input)
+        prediction=[1]
         logger.info(type(prediction))
         logger.info("Processed data: %s", prediction[0])
         

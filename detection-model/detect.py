@@ -11,7 +11,7 @@ print("Reading Dataset")
 df=pd.read_csv(cwd+'/detection-model/Webpages_Dataset_Final.csv')
 countries=df['geo_loc'].unique()
 
-print("Exporting Countries List externally")
+# print("Exporting Countries List externally")
 file=open(cwd+"/detection-model/countries.txt", "w")
 for country in countries:
     file.write(country+"\n")
@@ -36,7 +36,7 @@ for label in categorical_vars:
 print("Created Label Encoder pkl files")
 
 print("Initialising dependent and independent variables")
-x = df.drop('label', axis=1)
+x = df.drop(['label', 'https'], axis=1)
 y = df["label"]
 
 
@@ -44,25 +44,18 @@ print("Intialising Standard Scaler")
 scaler = StandardScaler()
 x=scaler.fit_transform(x)
 
-print("Building Isolation Forest Model")
-iso_forest = IsolationForest(contamination=0.05)
-iso_forest.fit(x)
-iso_scores=iso_forest.decision_function(x)
+print("Building CNN Model")
 
-print("Updating Dataset with ISO Scores")
-df['iso']=iso_scores
 
-x=scaler.fit_transform(x)
+print("Building LSTM Model")
 
-print("Building Linear SVM Model")
-svm=LinearSVC(random_state=42)
-svm.fit(x, y)
 
-print("Creating ISO Forest pkl")
+
+print("Creating CNN pkl")
 joblib.dump(iso_forest, cwd+'/detection-model/iso_forest_model.pkl')
 print("Created ISO Forest pkl")
 
-print("Creating Linear SVM pkl")
+print("Creating LSTM pkl")
 joblib.dump(svm, cwd+'/detection-model/linear_svm_model.pkl')
 print("Created Linear SVM pkl")
 

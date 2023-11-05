@@ -8,7 +8,9 @@
 *.pkl
 
 # Dataset Files
-*.csv
+
 .env
 
 countries.txt
+
+detection_model
