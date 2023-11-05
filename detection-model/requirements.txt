@@ -1,8 +1,11 @@
 pandas
 numpy
-matplotlib
-sklearn
+scikit-learn
 joblib
 Flask
 os
-json
+tensorflow
+requests
+subprocess
+keras
+socket
